@@ -1,5 +1,8 @@
 package dev.poc.helpdesk.domain;
 
+import dev.poc.helpdesk.domain.enumerator.Category;
+import dev.poc.helpdesk.domain.enumerator.Priority;
+import dev.poc.helpdesk.domain.enumerator.TicketStatus;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.ArrayList;

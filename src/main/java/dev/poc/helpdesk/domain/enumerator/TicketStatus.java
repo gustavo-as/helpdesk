@@ -1,4 +1,4 @@
-package dev.poc.helpdesk.domain;
+package dev.poc.helpdesk.domain.enumerator;
 
 import java.util.Set;
 
