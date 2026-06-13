@@ -1,4 +1,4 @@
-package dev.poc.helpdesk.domain;
+package dev.poc.helpdesk.exception;
 
 import dev.poc.helpdesk.domain.enumerator.TicketStatus;
 
