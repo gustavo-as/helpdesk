@@ -5,11 +5,16 @@ import dev.poc.helpdesk.domain.enumerator.TicketStatus;
 import dev.poc.helpdesk.service.TicketService;
 import dev.poc.helpdesk.controller.dto.*;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import dev.poc.helpdesk.ai.DraftService;
 import dev.poc.helpdesk.controller.dto.ReplyDraft;
 import dev.poc.helpdesk.domain.Ticket;
+import dev.poc.helpdesk.ai.AgentService;
+import dev.poc.helpdesk.ai.AgentOutcome;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 
 import java.net.URI;
 import java.util.List;
@@ -20,10 +25,15 @@ public class TicketController {
 
     private final TicketService service;
     private final DraftService draftService;
+    private final AgentService agentService;
 
-    public TicketController(TicketService service, DraftService draftService) {
+    @Value("${helpdesk.agent.enabled:false}")
+    private boolean agentEnabled;
+
+    public TicketController(TicketService service, DraftService draftService, AgentService agentService) {
         this.service = service;
         this.draftService = draftService;
+        this.agentService = agentService;
     }
 
     @PostMapping("/{id}/draft-reply")
@@ -64,5 +74,13 @@ public class TicketController {
     @PostMapping("/{id}/responses")
     public TicketView respond(@PathVariable Long id, @Valid @RequestBody AddResponseRequest req) {
         return TicketView.from(service.respond(id, req.body(), req.author()));
+    }
+
+    @PostMapping("/{id}/agent")
+    public ResponseEntity<AgentOutcome> runAgent(@PathVariable Long id) {
+        if (!agentEnabled) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
+        return ResponseEntity.ok(agentService.handle(id));
     }
 }
