@@ -126,3 +126,42 @@ With the deterministic core and its rails in place, the next phase adds AI in
 layers (L1 -> L3 above). Each layer plugs into a seam already present in this
 codebase (the `Category` enum, the service methods, the state machine) and
 keeps the AI bound by the same rules the rest of the system obeys.
+
+
+---->
+
+### Stage 3 — AI integration, Level 1: category suggestion (complete)
+
+The first AI seam. When a ticket is being created, an LLM reads its title and
+description and *suggests* a `Category`. The decisions behind it are recorded in
+**ADR 0007** (how the AI integrates) and **ADR 0008** (cost strategy).
+
+- `ClassificationService` (package `ai`) calls the LLM through Spring AI's
+  `ChatClient`. The class contains no Anthropic-specific code — the provider is
+  configuration, not code — and it returns `Optional<Category>`.
+- The rail: the model's free-form reply is validated against the `Category`
+  enum. Only a value that maps to a real category passes; anything else (a
+  hallucinated category, an odd format, an empty reply) becomes
+  `Optional.empty()`. The LLM proposes; the domain decides. It is the same kind
+  of wall that returns 409 for an illegal transition, now applied to AI output.
+- `ClassificationController`, with `SuggestionRequest` and `CategorySuggestion`
+  DTOs, exposes a dedicated endpoint (`POST /api/classification/category`),
+  separate from ticket creation. The `available` flag carries the "no
+  suggestion" case as a normal state, not an error.
+- Opt-in and non-blocking (ADR 0008): creating a ticket never calls the LLM;
+  suggestion is a separate, optional request. An AI outage — or an empty credit
+  balance — cannot break the core flow.
+- Provider abstraction, proven in practice: switching the model would touch only
+  `pom.xml` and `application.properties`, never the service code.
+
+Validation: tested through Swagger. A billing complaint was classified as
+`BILLING`, a login error as `TECHNICAL`, a vague question as `GENERAL` — each
+reply passing through the enum rail.
+
+## Next — Level 1 frontend, then Levels 2 and 3
+
+- Frontend: a "suggest category" action on the create-ticket screen, with the
+  human gate (the AI proposes, the user confirms or overrides), a loading state
+  for the 1-2 second call, and graceful handling when `available` is false.
+- Level 2: the LLM drafts a reply, reviewed and sent by a human (the gate again).
+- Level 3: an autonomous agent resolves simple tickets within the same rails.

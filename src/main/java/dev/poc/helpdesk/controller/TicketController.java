@@ -7,6 +7,9 @@ import dev.poc.helpdesk.controller.dto.*;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import dev.poc.helpdesk.ai.DraftService;
+import dev.poc.helpdesk.controller.dto.ReplyDraft;
+import dev.poc.helpdesk.domain.Ticket;
 
 import java.net.URI;
 import java.util.List;
@@ -16,9 +19,17 @@ import java.util.List;
 public class TicketController {
 
     private final TicketService service;
+    private final DraftService draftService;
 
-    public TicketController(TicketService service) {
+    public TicketController(TicketService service, DraftService draftService) {
         this.service = service;
+        this.draftService = draftService;
+    }
+
+    @PostMapping("/{id}/draft-reply")
+    public ReplyDraft draftReply(@PathVariable Long id) {
+        Ticket ticket = service.get(id);
+        return new ReplyDraft(draftService.draftReply(ticket));
     }
 
     @PostMapping
